@@ -123,6 +123,8 @@ Support des formats :
 📄 Licence
 
 MIT
+
+
 🏷️ Tags
 
 mistral-ai, chat-interface, ai-chat, streaming, voice-recognition, file-upload, multiple-sessions, openai-compatible, javascript, html-css
