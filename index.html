@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🤖 Mistral Chat Pro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* ===== VARIABLES DE BASE ===== */
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-chat: #fafafa;
+      --text-primary: #2d3748;
+      --text-secondary: #718096;
+      --border-color: #e2e8f0;
+      --gradient-start: #667eea;
+      --gradient-end: #764ba2;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --accent: #667eea;
+      --code-bg: #f1f5f9;
+      --code-text: #e11d48;
+      --sidebar-width: 260px;
+    }
+    [data-theme="dark"] {
+      --bg-primary: #111827;
+      --bg-secondary: #1f2937;
+      --bg-chat: #0f172a;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --border-color: #374151;
+      --gradient-start: #3b82f6;
+      --gradient-end: #8b5cf6;
+      --code-bg: #1e293b;
+      --code-text: #fda4af;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .app {
+      width: 100%;
+      height: 100vh;
+      max-width: 1400px;
+      background: var(--bg-primary);
+      display: flex;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: background 0.3s, color 0.3s;
+    }
+    @media (min-width: 768px) {
+      .app {
+        height: 92vh;
+        border-radius: 20px;
+        margin: 20px;
+      }
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      padding: 16px;
+      gap: 12px;
+      overflow-y: auto;
+      transition: all 0.3s;
+    }
+    .sidebar .brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar .brand i { background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sidebar .new-session-btn {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      color: #fff;
+      border: none;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      transition: 0.2s;
+    }
+    .sidebar .new-session-btn:hover { opacity:0.9; transform:scale(0.98); }
+    .session-list {
+      flex:1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+    .session-item {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+    .session-item.active { border-color: var(--accent); background: var(--bg-secondary); }
+    .session-item:hover { background: var(--bg-secondary); }
+    .session-item .actions {
+      display: flex;
+      gap: 6px;
+    }
+    .session-item .actions button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .session-item .actions button:hover { background: var(--border-color); }
+    .sidebar-footer {
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sidebar-footer button {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    /* ===== MAIN ===== */
+    .main {
+      flex:1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .header {
+      padding: 12px 20px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .header .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 18px;
+    }
+    .header .title img { height: 28px; width: auto; border-radius: 6px; }
+    .header .actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .header .actions select, .header .actions button {
+      padding: 6px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .header .actions button {
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .token-counter {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .chat-area {
+      flex:1;
+      overflow-y: auto;
+      padding: 20px;
+      background: var(--bg-chat);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 90%;
+      animation: slideIn 0.3s ease;
+    }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .message.user .avatar { background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color:#fff; }
+    .message.assistant .avatar { background: var(--bg-secondary); border:1px solid var(--border-color); color:var(--text-primary); }
+    .message .bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+      max-width: 100%;
+    }
+    .message.user .bubble {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      color: #fff;
+      border: none;
+      border-bottom-right-radius: 4px;
+    }
+    .message.assistant .bubble { border-bottom-left-radius: 4px; }
+    .message .bubble p { margin-bottom: 8px; }
+    .message .bubble p:last-child { margin-bottom:0; }
+    .message .bubble pre { background: var(--code-bg); padding:12px; border-radius:8px; overflow-x:auto; margin:8px 0; }
+    .message .bubble code { font-family: monospace; background: var(--code-bg); padding:2px 6px; border-radius:4px; font-size:0.85em; color:var(--code-text); }
+    .message .bubble ul, .message .bubble ol { margin-left:20px; margin-bottom:8px; }
+
+    .input-area {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .input-area .input-wrapper {
+      flex:1;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 4px 8px;
+      transition: 0.2s;
+    }
+    .input-area .input-wrapper:focus-within { border-color: var(--accent); background: var(--bg-primary); }
+    .input-area textarea {
+      flex:1;
+      border: none;
+      background: transparent;
+      resize: none;
+      padding: 8px 4px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      color: var(--text-primary);
+      min-height: 44px;
+      max-height: 120px;
+      line-height: 1.4;
+    }
+    .input-area .input-wrapper button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 6px 4px;
+      font-size: 18px;
+      transition: 0.2s;
+    }
+    .input-area .input-wrapper button:hover { color: var(--accent); }
+    .input-area .input-wrapper button.record.active { color: #ef4444; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%{opacity:1;} 50%{opacity:0.4;} 100%{opacity:1;} }
+    .input-area .send-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+    .input-area .send-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+    .empty-state {
+      flex:1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 20px;
+    }
+    .empty-state i { font-size: 48px; margin-bottom:16px; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .empty-state h3 { color: var(--text-primary); font-size:20px; margin-bottom:8px; }
+
+    /* ===== MODALS ===== */
+    .modal-overlay {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding:20px;
+    }
+    .modal {
+      background: var(--bg-primary);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .modal h2 { font-size:20px; margin-bottom:8px; }
+    .modal p { font-size:13px; color:var(--text-secondary); margin-bottom:16px; }
+    .modal label { display:block; margin:12px 0 6px; font-weight:600; font-size:13px; }
+    .modal input, .modal select, .modal textarea {
+      width:100%; padding:10px 12px;
+      border:1.5px solid var(--border-color);
+      border-radius:10px;
+      font-size:14px;
+      background:var(--bg-secondary);
+      color:var(--text-primary);
+    }
+    .modal textarea { min-height:60px; resize:vertical; }
+    .modal .row { display:flex; gap:12px; align-items:center; }
+    .modal .row label { margin:0; flex:1; }
+    .modal .row input { flex:2; }
+    .modal-buttons { display:flex; gap:10px; margin-top:20px; }
+    .modal button { flex:1; padding:12px; border-radius:10px; border:none; font-weight:600; cursor:pointer; }
+    .modal .btn-save { background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color:#fff; }
+    .modal .btn-cancel { background: var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border-color); }
+
+    .toast-container {
+      position:fixed; top:20px; left:50%; transform:translateX(-50%);
+      z-index:10000; display:flex; flex-direction:column; gap:8px;
+      pointer-events:none; width:90%; max-width:400px;
+    }
+    .toast {
+      background:var(--bg-primary); color:var(--text-primary);
+      border:1px solid var(--border-color); padding:12px 16px;
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      display:flex; align-items:center; gap:10px; font-size:13px;
+      animation: slideDown 0.3s, fadeOut 0.3s 3s forwards;
+    }
+    .toast.error { border-left:4px solid #ef4444; }
+    .toast.success { border-left:4px solid #10b981; }
+    .toast.info { border-left:4px solid var(--accent); }
+    @keyframes slideDown { from { transform:translateY(-20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    @keyframes fadeOut { to { opacity:0; transform:translateY(-10px); } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .app { height:100vh; border-radius:0; margin:0; }
+      .header .title { font-size:16px; }
+      .token-counter { display:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="brand"><i class="fas fa-robot"></i> Mistral Pro</div>
+    <button class="new-session-btn" onclick="createSession()"><i class="fas fa-plus"></i> Nouvelle session</button>
+    <div class="session-list" id="sessionList"></div>
+    <div class="sidebar-footer">
+      <button onclick="showCustomizeModal()"><i class="fas fa-palette"></i> Personnaliser</button>
+      <button onclick="showConfigModal()"><i class="fas fa-cog"></i> Paramètres</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="header">
+      <div class="title">
+        <img id="appLogo" src="" alt="logo" style="display:none;">
+        <span id="appName">Mistral Chat</span>
+        <span class="token-counter" id="tokenCounter">Tokens: 0 | Coût: 0.0000 €</span>
+      </div>
+      <div class="actions">
+        <select id="modelSelect" onchange="changeModel()">
+          <option value="open-mistral-7b">Mistral 7B</option>
+          <option value="open-mixtral-8x7b">Mixtral 8x7B</option>
+          <option value="mistral-small-latest">Mistral Small</option>
+          <option value="mistral-medium-latest">Mistral Medium</option>
+          <option value="mistral-large-latest">Mistral Large</option>
+          <option value="codestral-latest">Codestral</option>
+        </select>
+        <button onclick="exportJSON()"><i class="fas fa-file-export"></i> JSON</button>
+        <button onclick="exportMarkdown()"><i class="fas fa-file-alt"></i> MD</button>
+        <button onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="empty-state" id="emptyState">
+        <i class="fas fa-comment-dots"></i>
+        <h3>Bienvenue sur Mistral Pro</h3>
+        <p>Commencez une nouvelle conversation ou chargez une session.</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <button onclick="attachFile()" title="Joindre un fichier"><i class="fas fa-paperclip"></i></button>
+        <button id="voiceBtn" onclick="toggleVoice()" title="Saisie vocale"><i class="fas fa-microphone"></i></button>
+        <textarea id="inputArea" rows="1" placeholder="Posez votre question..." onkeydown="handleKey(event)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <i class="fas fa-paper-plane"></i> Envoyer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="configModal" style="display:none;">
+  <div class="modal">
+    <h2>⚙️ Configuration API</h2>
+    <p>Paramètres de connexion à Mistral.</p>
+    <label>URL de l'API</label>
+    <input type="url" id="apiUrlInput" placeholder="https://api.mistral.ai/v1">
+    <label>Clé API</label>
+    <input type="password" id="apiKeyInput" placeholder="Votre clé secrète">
+    <label>Modèle par défaut</label>
+    <select id="modelSelectConfig"></select>
+    <div style="margin-top:8px;"><input type="text" id="customModelInput" placeholder="Autre modèle..."></div>
+    <hr style="margin:16px 0; border-color:var(--border-color);">
+    <h3>Paramètres avancés</h3>
+    <div class="row"><label>Température</label><input type="number" id="temperature" value="0.7" step="0.1" min="0" max="2"></div>
+    <div class="row"><label>Top P</label><input type="number" id="topP" value="1.0" step="0.1" min="0" max="1"></div>
+    <div class="row"><label>Max tokens</label><input type="number" id="maxTokens" value="1024" step="64" min="1"></div>
+    <div class="test-connection-container" style="margin-top:16px; padding:12px; background:var(--bg-secondary); border-radius:10px;">
+      <button class="btn-test" onclick="testConnection()" style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:8px; cursor:pointer;">⚡ Tester la connexion</button>
+      <div id="testConnStatus" style="display:none; margin-top:8px; font-size:12px;"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeConfigModal()">Annuler</button>
+      <button class="btn-save" onclick="saveConfig()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal personnalisation -->
+<div class="modal-overlay" id="customizeModal" style="display:none;">
+  <div class="modal">
+    <h2>🎨 Personnalisation</h2>
+    <p>Modifiez l'apparence de l'application.</p>
+    <label>Nom de l'application</label>
+    <input type="text" id="appNameInput" placeholder="Mistral Chat">
+    <label>Logo (URL de l'image)</label>
+    <input type="url" id="appLogoInput" placeholder="https://exemple.com/logo.png">
+    <label>Couleur principale</label>
+    <input type="color" id="primaryColor" value="#667eea">
+    <label>Couleur secondaire</label>
+    <input type="color" id="secondaryColor" value="#764ba2">
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeCustomizeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveCustomize()">Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmation -->
+<div class="modal-overlay" id="confirmModal" style="display:none;">
+  <div class="modal">
+    <h2>🗑️ Confirmer</h2>
+    <p id="confirmMessage">Voulez-vous supprimer cette session ?</p>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeConfirmModal()">Annuler</button>
+      <button style="background:#ef4444; color:white;" onclick="executeConfirmedAction()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ============================================================
+  //  ÉTAT GLOBAL
+  // ============================================================
+  const DEFAULT_URL = 'https://api.mistral.ai/v1';
+  let sessions = [];                // [{ id, name, messages, model, temperature, topP, maxTokens, createdAt }]
+  let currentSessionId = null;
+  let isStreaming = false;
+  let currentTheme = localStorage.getItem('mistral-theme') || 'light';
+  let pendingConfirmAction = null;
+  let voiceRecognition = null;
+  let isRecording = false;
+
+  // Configuration API
+  let apiConfig = {
+    url: localStorage.getItem('mistral-api-url') || DEFAULT_URL,
+    key: localStorage.getItem('mistral-api-key') || '',
+    model: localStorage.getItem('mistral-api-model') || 'open-mistral-7b'
+  };
+
+  // Personnalisation
+  let custom = {
+    appName: localStorage.getItem('mistral-app-name') || 'Mistral Chat',
+    logo: localStorage.getItem('mistral-logo') || '',
+    primary: localStorage.getItem('mistral-primary') || '#667eea',
+    secondary: localStorage.getItem('mistral-secondary') || '#764ba2'
+  };
+
+  // ============================================================
+  //  INIT
+  // ============================================================
+  function init() {
+    // Thème
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.getElementById('themeIcon').className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    // Appliquer personnalisation
+    applyCustom();
+    // Charger sessions
+    loadSessions();
+    // Sélecteur de modèles
+    populateModelSelects();
+    // Si aucune session, en créer une
+    if (sessions.length === 0) createSession();
+    else {
+      // Charger la dernière session active
+      const last = sessions[sessions.length-1];
+      currentSessionId = last.id;
+      renderSessionList();
+      renderMessages();
+    }
+    // Mise à jour du compteur
+    updateTokenCounter();
+    // Événements
+    document.getElementById('inputArea').addEventListener('input', autoResize);
+  }
+
+  // ============================================================
+  //  SESSIONS
+  // ============================================================
+  function loadSessions() {
+    try {
+      const data = localStorage.getItem('mistral-sessions');
+      if (data) sessions = JSON.parse(data);
+      else sessions = [];
+    } catch(e) { sessions = []; }
+    // Si aucune session, créer une par défaut
+    if (sessions.length === 0) {
+      createSessionInternal('Nouvelle conversation');
+    }
+  }
+
+  function saveSessions() {
+    localStorage.setItem('mistral-sessions', JSON.stringify(sessions));
+    renderSessionList();
+  }
+
+  function createSessionInternal(name) {
+    const id = Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+    const session = {
+      id,
+      name: name || 'Nouvelle conversation',
+      messages: [],
+      model: apiConfig.model,
+      temperature: 0.7,
+      topP: 1.0,
+      maxTokens: 1024,
+      createdAt: new Date().toISOString()
+    };
+    sessions.push(session);
+    currentSessionId = id;
+    saveSessions();
+    renderMessages();
+    updateTokenCounter();
+    return session;
+  }
+
+  function createSession() {
+    const name = prompt('Nom de la session :', 'Nouvelle conversation');
+    if (name !== null) {
+      createSessionInternal(name || 'Nouvelle conversation');
+      showToast('Session créée', 'success');
+    }
+  }
+
+  function switchSession(id) {
+    if (id === currentSessionId) return;
+    currentSessionId = id;
+    renderSessionList();
+    renderMessages();
+    updateTokenCounter();
+  }
+
+  function deleteSession(id) {
+    if (sessions.length <= 1) {
+      showToast('Gardez au moins une session.', 'error');
+      return;
+    }
+    pendingConfirmAction = () => {
+      sessions = sessions.filter(s => s.id !== id);
+      if (currentSessionId === id) {
+        currentSessionId = sessions[0]?.id || null;
+      }
+      saveSessions();
+      renderMessages();
+      updateTokenCounter();
+      showToast('Session supprimée', 'success');
+    };
+    document.getElementById('confirmMessage').textContent = 'Supprimer cette session ?';
+    document.getElementById('confirmModal').style.display = 'flex';
+  }
+
+  function renameSession(id) {
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+    const newName = prompt('Nouveau nom :', session.name);
+    if (newName !== null && newName.trim() !== '') {
+      session.name = newName.trim();
+      saveSessions();
+      renderSessionList();
+    }
+  }
+
+  function getCurrentSession() {
+    return sessions.find(s => s.id === currentSessionId) || null;
+  }
+
+  function renderSessionList() {
+    const container = document.getElementById('sessionList');
+    container.innerHTML = '';
+    sessions.forEach(s => {
+      const div = document.createElement('div');
+      div.className = `session-item${s.id === currentSessionId ? ' active' : ''}`;
+      div.innerHTML = `
+        <span onclick="switchSession('${s.id}')" style="flex:1; cursor:pointer;">${s.name}</span>
+        <div class="actions">
+          <button onclick="renameSession('${s.id}')" title="Renommer"><i class="fas fa-pen"></i></button>
+          <button onclick="deleteSession('${s.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ============================================================
+  //  MESSAGES
+  // ============================================================
+  function renderMessages() {
+    const area = document.getElementById('chatArea');
+    const session = getCurrentSession();
+    if (!session || session.messages.length === 0) {
+      area.innerHTML = `<div class="empty-state"><i class="fas fa-comment-dots"></i><h3>Aucun message</h3><p>Commencez à discuter !</p></div>`;
+      return;
+    }
+    area.innerHTML = '';
+    session.messages.forEach((msg, idx) => {
+      // On ignore le message assistant vide en cours de streaming
+      if (msg.role === 'assistant' && msg.content === '' && isStreaming && idx === session.messages.length-1) return;
+      const div = document.createElement('div');
+      div.className = `message ${msg.role}`;
+      const avatar = msg.role === 'user' ? '👤' : '🤖';
+      const content = msg.role === 'user' ? escapeHTML(msg.content) : formatMarkdown(msg.content);
+      div.innerHTML = `<div class="avatar">${avatar}</div><div class="bubble">${content}</div>`;
+      area.appendChild(div);
+    });
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function addMessage(role, content) {
+    const session = getCurrentSession();
+    if (!session) return;
+    session.messages.push({ role, content });
+    saveSessions();
+    renderMessages();
+    updateTokenCounter();
+  }
+
+  function updateLastMessage(content) {
+    const session = getCurrentSession();
+    if (!session || session.messages.length === 0) return;
+    session.messages[session.messages.length-1].content = content;
+    saveSessions();
+    renderMessages();
+    updateTokenCounter();
+  }
+
+  // ============================================================
+  //  ENVOI DE MESSAGE (avec streaming)
+  // ============================================================
+  async function sendMessage() {
+    const input = document.getElementById('inputArea');
+    const text = input.value.trim();
+    if (!text || isStreaming) return;
+    const session = getCurrentSession();
+    if (!session) return showToast('Aucune session active.', 'error');
+    if (!apiConfig.key) return showConfigModal();
+
+    // Ajouter le message utilisateur
+    addMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Ajouter un placeholder pour l'assistant
+    session.messages.push({ role: 'assistant', content: '' });
+    saveSessions();
+    renderMessages();
+
+    const lastContainer = document.querySelector('.message.assistant:last-child .bubble');
+    if (lastContainer) lastContainer.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+
+    isStreaming = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    // Construire le body avec les paramètres de session
+    const body = {
+      model: session.model || apiConfig.model,
+      messages: session.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+      stream: true,
+      temperature: parseFloat(session.temperature || 0.7),
+      top_p: parseFloat(session.topP || 1.0),
+      max_tokens: parseInt(session.maxTokens || 1024)
+    };
+
+    try {
+      const response = await fetch(`${apiConfig.url}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
+        body: JSON.stringify(body)
+      });
+      if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '', buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (let line of lines) {
+          if (line.trim().startsWith('data: ')) {
+            let data = line.trim().slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices[0]?.delta?.content;
+              if (delta) {
+                fullContent += delta;
+                if (lastContainer) lastContainer.innerHTML = formatMarkdown(fullContent);
+                document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+              }
+            } catch(e) {}
+          }
+        }
+      }
+      // Mise à jour finale
+      updateLastMessage(fullContent);
+    } catch (error) {
+      if (lastContainer) lastContainer.innerHTML = `<span style="color:#ef4444;">Erreur : ${error.message}</span>`;
+      // Supprimer le message assistant vide
+      session.messages.pop();
+      saveSessions();
+      showToast(error.message, 'error');
+    }
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    renderMessages();
+    updateTokenCounter();
+  }
+
+  // ============================================================
+  //  TOKENS ET COÛT
+  // ============================================================
+  function estimateTokens(text) {
+    // Approx : 1 token ~ 4 caractères en anglais, ~2 caractères en français
+    const words = text.split(/\s+/).length;
+    return Math.ceil(words * 1.3); // facteur moyen
+  }
+
+  function estimateCost(inputTokens, outputTokens, model) {
+    // Tarifs Mistral (euros pour 1M tokens) – approximatifs
+    const rates = {
+      'open-mistral-7b': { input: 0.25, output: 0.25 },
+      'open-mixtral-8x7b': { input: 0.7, output: 0.7 },
+      'mistral-small-latest': { input: 1.0, output: 1.0 },
+      'mistral-medium-latest': { input: 2.5, output: 2.5 },
+      'mistral-large-latest': { input: 4.0, output: 4.0 },
+      'codestral-latest': { input: 1.0, output: 1.0 }
+    };
+    const rate = rates[model] || rates['open-mistral-7b'];
+    const cost = (inputTokens * rate.input + outputTokens * rate.output) / 1_000_000;
+    return cost;
+  }
+
+  function updateTokenCounter() {
+    const session = getCurrentSession();
+    if (!session) {
+      document.getElementById('tokenCounter').textContent = 'Tokens: 0 | Coût: 0.0000 €';
+      return;
+    }
+    let inputTokens = 0, outputTokens = 0;
+    // On compte les messages de la session (sauf le dernier assistant vide)
+    const msgs = session.messages;
+    for (let i = 0; i < msgs.length; i++) {
+      const msg = msgs[i];
+      if (msg.role === 'user') inputTokens += estimateTokens(msg.content);
+      else if (msg.role === 'assistant' && msg.content) outputTokens += estimateTokens(msg.content);
+    }
+    const total = inputTokens + outputTokens;
+    const cost = estimateCost(inputTokens, outputTokens, session.model || apiConfig.model);
+    document.getElementById('tokenCounter').textContent = `Tokens: ${total} (in:${inputTokens} out:${outputTokens}) | Coût: ${cost.toFixed(6)} €`;
+  }
+
+  // ============================================================
+  //  EXPORT
+  // ============================================================
+  function exportJSON() {
+    const session = getCurrentSession();
+    if (!session) return showToast('Aucune session à exporter.', 'error');
+    const data = {
+      sessionName: session.name,
+      model: session.model,
+      messages: session.messages,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `session_${session.name.replace(/\s+/g,'_')}.json`);
+    showToast('Export JSON réussi', 'success');
+  }
+
+  function exportMarkdown() {
+    const session = getCurrentSession();
+    if (!session) return showToast('Aucune session à exporter.', 'error');
+    let md = `# ${session.name}\n\n`;
+    md += `**Modèle :** ${session.model}\n\n---\n\n`;
+    session.messages.forEach(m => {
+      const role = m.role === 'user' ? '👤 **Utilisateur**' : '🤖 **Assistant**';
+      md += `${role}\n\n${m.content}\n\n---\n\n`;
+    });
+    const blob = new Blob([md], { type: 'text/markdown' });
+    downloadBlob(blob, `session_${session.name.replace(/\s+/g,'_')}.md`);
+    showToast('Export Markdown réussi', 'success');
+  }
+
+  function downloadBlob(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ============================================================
+  //  FICHIERS (upload)
+  // ============================================================
+  function attachFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.json,.xml,.html,.css,.js,.py,.java,.c,.cpp';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        let content = ev.target.result;
+        // Pour les images, on ne peut pas extraire le texte facilement, on indique juste
+        if (file.type.startsWith('image/')) {
+          content = `[Image : ${file.name}] (contenu non affiché)`;
+        } else if (file.type === 'application/pdf' || file.type.includes('text')) {
+          // On garde le texte tel quel
+          content = content.slice(0, 5000); // limiter pour éviter dépassement
+        } else {
+          // Autres fichiers : on lit comme texte
+          content = content.slice(0, 5000);
+        }
+        const inputArea = document.getElementById('inputArea');
+        inputArea.value = inputArea.value + (inputArea.value ? ' ' : '') + `[Fichier: ${file.name}]\n${content}`;
+        autoResize.call(inputArea);
+        showToast(`Fichier ${file.name} chargé`, 'success');
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  // ============================================================
+  //  VOIX (Web Speech API)
+  // ============================================================
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      showToast('Reconnaissance vocale non supportée par ce navigateur.', 'error');
+      return;
+    }
+    if (isRecording) {
+      stopVoice();
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.lang = 'fr-FR';
+    voiceRecognition.continuous = false;
+    voiceRecognition.interimResults = true;
+    voiceRecognition.onresult = (event) => {
+      let final = '';
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) final += event.results[i][0].transcript;
+        else interim += event.results[i][0].transcript;
+      }
+      const input = document.getElementById('inputArea');
+      input.value = final || interim;
+      autoResize.call(input);
+    };
+    voiceRecognition.onerror = (e) => {
+      showToast('Erreur de reconnaissance: ' + e.error, 'error');
+      stopVoice();
+    };
+    voiceRecognition.onend = stopVoice;
+    voiceRecognition.start();
+    isRecording = true;
+    document.getElementById('voiceBtn').classList.add('active');
+    document.getElementById('voiceBtn').innerHTML = '<i class="fas fa-microphone-slash"></i>';
+    showToast('Parlez maintenant...', 'info');
+  }
+
+  function stopVoice() {
+    if (voiceRecognition) {
+      try { voiceRecognition.stop(); } catch(e) {}
+    }
+    isRecording = false;
+    document.getElementById('voiceBtn').classList.remove('active');
+    document.getElementById('voiceBtn').innerHTML = '<i class="fas fa-microphone"></i>';
+  }
+
+  // ============================================================
+  //  MARKDOWN
+  // ============================================================
+  function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, tag => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[tag] || tag));
+  }
+  function formatMarkdown(text) {
+    let html = escapeHTML(text);
+    const codeBlocks = [];
+    html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
+      const id = `__CODEBLOCK_${codeBlocks.length}__`;
+      codeBlocks.push(code);
+      return id;
+    });
+    html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    let lines = html.split('\n');
+    let inList = false, processed = [];
+    for (let line of lines) {
+      let trimmed = line.trim();
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        if (!inList) { processed.push('<ul>'); inList = true; }
+        processed.push('<li>' + trimmed.substring(2) + '</li>');
+      } else {
+        if (inList) { processed.push('</ul>'); inList = false; }
+        if (trimmed === '') processed.push('<br>');
+        else processed.push(line);
+      }
+    }
+    if (inList) processed.push('</ul>');
+    html = processed.join('\n').replace(/\n/g, '<br>');
+    codeBlocks.forEach((code, i) => {
+      html = html.replace(`__CODEBLOCK_${i}__`, `<pre><code>${code}</code></pre>`);
+    });
+    return html;
+  }
+
+  // ============================================================
+  //  MODALES
+  // ============================================================
+  function showConfigModal() {
+    document.getElementById('apiUrlInput').value = apiConfig.url;
+    document.getElementById('apiKeyInput').value = apiConfig.key;
+    document.getElementById('modelSelectConfig').value = apiConfig.model;
+    document.getElementById('customModelInput').value = '';
+    document.getElementById('temperature').value = getCurrentSession()?.temperature || 0.7;
+    document.getElementById('topP').value = getCurrentSession()?.topP || 1.0;
+    document.getElementById('maxTokens').value = getCurrentSession()?.maxTokens || 1024;
+    document.getElementById('testConnStatus').style.display = 'none';
+    document.getElementById('configModal').style.display = 'flex';
+  }
+  function closeConfigModal() {
+    document.getElementById('configModal').style.display = 'none';
+  }
+  function saveConfig() {
+    const url = document.getElementById('apiUrlInput').value.trim() || DEFAULT_URL;
+    const key = document.getElementById('apiKeyInput').value.trim();
+    let model = document.getElementById('customModelInput').value.trim() || document.getElementById('modelSelectConfig').value;
+    if (!key) return showToast('La clé API est requise.', 'error');
+    apiConfig.url = url;
+    apiConfig.key = key;
+    apiConfig.model = model;
+    localStorage.setItem('mistral-api-url', url);
+    localStorage.setItem('mistral-api-key', key);
+    localStorage.setItem('mistral-api-model', model);
+    // Appliquer les paramètres à la session courante
+    const session = getCurrentSession();
+    if (session) {
+      session.model = model;
+      session.temperature = parseFloat(document.getElementById('temperature').value) || 0.7;
+      session.topP = parseFloat(document.getElementById('topP').value) || 1.0;
+      session.maxTokens = parseInt(document.getElementById('maxTokens').value) || 1024;
+      saveSessions();
+    }
+    populateModelSelects();
+    document.getElementById('modelSelect').value = model;
+    closeConfigModal();
+    showToast('Configuration sauvegardée', 'success');
+    updateTokenCounter();
+  }
+  function populateModelSelects() {
+    const models = ['open-mistral-7b','open-mixtral-8x7b','mistral-small-latest','mistral-medium-latest','mistral-large-latest','codestral-latest'];
+    ['modelSelect', 'modelSelectConfig'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = '';
+      models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        sel.appendChild(opt);
+      });
+      // Ajouter le modèle personnalisé s'il existe
+      if (apiConfig.model && !models.includes(apiConfig.model)) {
+        const opt = document.createElement('option');
+        opt.value = apiConfig.model;
+        opt.textContent = apiConfig.model;
+        sel.appendChild(opt);
+      }
+      sel.value = apiConfig.model;
+    });
+  }
+
+  function changeModel() {
+    const val = document.getElementById('modelSelect').value;
+    const session = getCurrentSession();
+    if (session) {
+      session.model = val;
+      saveSessions();
+    }
+    apiConfig.model = val;
+    localStorage.setItem('mistral-api-model', val);
+    showToast(`Modèle : ${val}`, 'info');
+    updateTokenCounter();
+  }
+
+  async function testConnection() {
+    const btn = document.querySelector('#configModal .btn-test');
+    const status = document.getElementById('testConnStatus');
+    const url = document.getElementById('apiUrlInput').value.trim() || DEFAULT_URL;
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) { status.style.display='block'; status.style.color='#ef4444'; status.textContent='❌ Clé API manquante.'; return; }
+    btn.disabled = true;
+    status.style.display='block'; status.style.color='var(--text-secondary)'; status.textContent='🔄 Test en cours...';
+    try {
+      const model = document.getElementById('customModelInput').value.trim() || document.getElementById('modelSelectConfig').value || 'open-mistral-7b';
+      const resp = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+        body: JSON.stringify({ model, messages:[{role:'user', content:'ping'}], max_tokens:1, stream:false })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.choices?.length) { status.style.color='#10b981'; status.textContent='✅ Connexion réussie !'; }
+        else { status.style.color='#f59e0b'; status.textContent='⚠️ Réponse inattendue.'; }
+      } else {
+        const err = await resp.text();
+        status.style.color='#ef4444'; status.textContent=`❌ HTTP ${resp.status} : ${err.slice(0,100)}`;
+      }
+    } catch(e) {
+      status.style.color='#ef4444'; status.textContent='❌ Erreur réseau. Vérifiez l\'URL.';
+    }
+    btn.disabled = false;
+  }
+
+  // ============================================================
+  //  PERSONNALISATION
+  // ============================================================
+  function showCustomizeModal() {
+    document.getElementById('appNameInput').value = custom.appName;
+    document.getElementById('appLogoInput').value = custom.logo;
+    document.getElementById('primaryColor').value = custom.primary;
+    document.getElementById('secondaryColor').value = custom.secondary;
+    document.getElementById('customizeModal').style.display = 'flex';
+  }
+  function closeCustomizeModal() {
+    document.getElementById('customizeModal').style.display = 'none';
+  }
+  function saveCustomize() {
+    custom.appName = document.getElementById('appNameInput').value.trim() || 'Mistral Chat';
+    custom.logo = document.getElementById('appLogoInput').value.trim();
+    custom.primary = document.getElementById('primaryColor').value;
+    custom.secondary = document.getElementById('secondaryColor').value;
+    localStorage.setItem('mistral-app-name', custom.appName);
+    localStorage.setItem('mistral-logo', custom.logo);
+    localStorage.setItem('mistral-primary', custom.primary);
+    localStorage.setItem('mistral-secondary', custom.secondary);
+    applyCustom();
+    closeCustomizeModal();
+    showToast('Personnalisation appliquée', 'success');
+  }
+  function applyCustom() {
+    document.getElementById('appName').textContent = custom.appName;
+    const logo = document.getElementById('appLogo');
+    if (custom.logo) {
+      logo.src = custom.logo;
+      logo.style.display = 'inline-block';
+    } else {
+      logo.style.display = 'none';
+    }
+    document.documentElement.style.setProperty('--gradient-start', custom.primary);
+    document.documentElement.style.setProperty('--gradient-end', custom.secondary);
+  }
+
+  // ============================================================
+  //  THEME
+  // ============================================================
+  function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.getElementById('themeIcon').className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    localStorage.setItem('mistral-theme', currentTheme);
+  }
+
+  // ============================================================
+  //  UTILITAIRES
+  // ============================================================
+  function showToast(msg, type='info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type==='success' ? 'fa-check-circle' : type==='error' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i> <span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3300);
+  }
+
+  function autoResize() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    pendingConfirmAction = null;
+  }
+  function executeConfirmedAction() {
+    if (pendingConfirmAction) pendingConfirmAction();
+    closeConfirmModal();
+  }
+
+  // Fermer les modales en cliquant à l'extérieur
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        if (this.id === 'configModal') closeConfigModal();
+        else if (this.id === 'customizeModal') closeCustomizeModal();
+        else if (this.id === 'confirmModal') closeConfirmModal();
+      }
+    });
+  });
+
+  // Lancement
+  window.onload = init;
+</script>
+</body>
+</html>
