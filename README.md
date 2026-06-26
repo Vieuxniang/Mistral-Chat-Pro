@@ -1,0 +1,2 @@
+# Mistral Chat Pro
+ 🤖 Mistral Chat Pro - Interface de chat ultime pour Mistral AI.  Fonctionnalités : streaming, sessions multiples, reconnaissance vocale, upload de fichiers, compteur de tokens, export JSON/MD, personnalisation complète, thème clair/sombre.  🚀 Démo : https://ton-utilisateur.github.io/mistral-chat-pro/ 📦 Installation : ouvrez index.html dans votre navigateur 🔧 Configuration : saisissez votre clé API Mistral  Modèles supportés : open-mistral-7b, open-mixtral-8x7b, mistral-small/large-latest, codestral-latest, + personnalisés.  Licence MIT
